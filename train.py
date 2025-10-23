@@ -89,6 +89,7 @@ def _train(
     run_dir = Path(args.run_dir)
 
     if is_torchrun():
+        print(run_dir)
         if run_dir.exists():
             raise RuntimeError(
                 f"Run dir {run_dir} already exists. Make sure to either rename `run_dir` or remove {run_dir}."
@@ -325,4 +326,9 @@ def _train(
 
 if __name__ == "__main__":
     """See README.md for usage."""
+    import torch 
+    total = torch.cuda.get_device_properties(0).total_memory 
+    target = 23 * 1024**3 # e.g., emulate 4 GB 
+    frac = min(0.98, target / total) 
+    torch.cuda.set_per_process_memory_fraction(frac, device=0)
     fire.Fire(train)

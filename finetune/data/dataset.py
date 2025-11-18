@@ -61,19 +61,31 @@ def maybe_load_local_dataset(
     if chunk:
         lines += maybe_chunk_lines(lines)
 
-    tokens_list: List[TokenSample] = []
-    for line in lines:
-        data = json.loads(line)
+    tokens_list: Iterator[TokenSample] = []
+    class TokenIterator():
+        def __init__(self, lines): 
+            self.lines = lines
+        def __len__(self): 
+            return len(self.lines)
+        def __getitem__(self, idx): 
+            return self.lines[idx]
+        def __setitem__(self, idx, item):
+            self.lines[idx] = item
 
-        token_sample: TokenSample = encode(
-            data,
-            instruct_tokenizer=instruct_tokenizer,
-            as_type=sample_type,
-        )
-        tokens_list.append(token_sample)
+        def encode(self, line):
+            data = json.loads(line)
+            token_sample: TokenSample = encode(
+                data,
+                instruct_tokenizer=instruct_tokenizer,
+                as_type=sample_type,
+            )
+            return token_sample
+        def __iter__(self):
+            for line in lines:
+                yield self.encode(line) 
 
     main_logger_info(f"{path} loaded and tokenized.")
-    _LOADED_DATASETS[path] = tokens_list
+    _LOADED_DATASETS[path] = TokenIterator(lines)
 
     return _LOADED_DATASETS[path]
 
